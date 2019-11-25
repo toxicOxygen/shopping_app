@@ -76,4 +76,9 @@ class Cart with ChangeNotifier{
     });
     return total;
   }
+
+  void clear(){
+    _items.clear();
+    notifyListeners();
+  }
 }
