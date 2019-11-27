@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../models/http_exceptions.dart';
 
 class Product with ChangeNotifier {
   final String id;
@@ -27,36 +29,7 @@ class Product with ChangeNotifier {
 
 class Products with ChangeNotifier{
 
-  List<Product> _items = [
-    Product(
-      id: 'p0',
-      title: 'CHECK PRINT SHIRT',
-      price: 110.0,
-      description: 'a red checkered shirt',
-      imageUrl: 'http://t.ly/yxAxb'
-    ),
-    Product(
-      id: 'p1',
-      title: 'GLORIA HIGH LOGO SNEAKER',
-      price: 91.0,
-      description: 'a beautiful shoe',
-      imageUrl: 'http://t.ly/OrPrl'
-    ),
-    Product(
-      id: 'p2',
-      title: 'CATE RIGID BAG',
-      description: 'a nice bag',
-      price: 94.5,
-      imageUrl: 'http://t.ly/RJGJO'
-    ),
-    Product(
-      id: 'p3',
-      title: 'GUESS CONNECT WATCH',
-      description: 'a beautiful wrist watch',
-      price: 45.99,
-      imageUrl: 'http://t.ly/mGAe5'
-    )
-  ];
+  List<Product> _items = [];
 
   List<Product> get products{
     return [..._items];
@@ -66,34 +39,91 @@ class Products with ChangeNotifier{
     return _items.where((item)=>item.isFavorite).toList();
   }
 
-  void addProduct(Map<String,dynamic> data){
-    _items.insert(0, Product(
-      id: DateTime.now().toIso8601String(),
-      description: data["description"],
-      imageUrl: data["imageUrl"],
-      price:double.parse(data["price"]),
-      title: data["title"]
-    ));
-    notifyListeners();
+  Future<void> fetchData() async{
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json";
+    try{
+      final response = await http.get(url);
+      Map<String,dynamic> responseData = json.decode(response.body);
+      print(responseData);
+      List<Product> _products = [];
+      responseData.forEach((productId,productData){
+        _products.add(Product(
+          id: productId,
+          description: productData["description"],
+          imageUrl: productData["imageUrl"],
+          price: double.parse(productData["price"]),
+          title: productData["title"],
+          isFavorite: productData["isFavorite"]
+        ));
+      });
+      _items = _products;
+      notifyListeners();
+    }catch(e){
+      print(e);
+      throw e;
+    }
   }
 
-  void updateProduct(Map<String,dynamic> data){
-    final index = _items.indexWhere((item)=>item.id==data["id"]);
+  Future<void> addProduct(Map<String,dynamic> data){
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json";
+    data.remove("id");
+    data = {...data,"isFavorite":false};
 
-    if(index >= 0){
-      _items[index] = Product(
-        id: data["id"],
+    return http.post(url, body: json.encode(data)
+    ).then((res){
+      final id = json.decode(res.body)["name"];
+      _items.insert(0, Product(
+        id: id,
         description: data["description"],
         imageUrl: data["imageUrl"],
         price:double.parse(data["price"]),
         title: data["title"]
-      );
+      ));
       notifyListeners();
+    }).catchError((e){
+      print(e);
+      throw e;
+    });
+    
+  }
+
+  Future<void> updateProduct(Map<String,dynamic> data) async{
+    final productId = data["id"];
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json";
+    data.remove("id");
+    try{
+      final index = _items.indexWhere((item)=>item.id==productId);
+      if(index >= 0){
+        await http.patch(url,body: json.encode(data));
+        _items[index] = Product(
+          id: productId,
+          description: data["description"],
+          imageUrl: data["imageUrl"],
+          price:double.parse(data["price"]),
+          title: data["title"],
+          isFavorite: _items[index].isFavorite
+        );
+        notifyListeners();
+      }
+    }catch(e){
+      throw e;
     }
   }
 
-  void deleteProduct(String productId){
-    _items.removeWhere((item)=>item.id == productId);
+  Future<void> deleteProduct(String productId) {
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json";
+    final productIndex = _items.indexWhere((item)=>item.id == productId);
+    var existingProduct = _items[productIndex];
+    _items.removeAt(productIndex);
     notifyListeners();
+    
+    return http.delete(url).then((res){
+      if(res.statusCode >= 400)
+        throw HttpException('failed to delete');
+      existingProduct = null;
+    }).catchError((e){
+      _items.insert(productIndex, existingProduct);
+      notifyListeners();
+    });
   }
 }

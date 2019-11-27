@@ -18,6 +18,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _imageUrlController = TextEditingController();
 
   var _isInit = true;
+  var _isLoading = false;
 
   var _newProduct = {
     "id":'',
@@ -65,7 +66,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           )
         ],
       ),
-      body: Form(
+      body: !_isLoading? Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 15),
@@ -137,6 +138,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
             )
           ],
         ),
+      ):
+      Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
@@ -184,14 +188,54 @@ class _EditProductScreenState extends State<EditProductScreen> {
       
       final prod = Provider.of<Products>(context,listen: false);
 
+      setState((){_isLoading = true;});
+
       if(_newProduct["id"].isEmpty){
         print('creating new product..');
-        prod.addProduct(_newProduct);
-        Navigator.of(context).pop();
+        prod.addProduct(_newProduct)
+        .catchError((e){
+          return showDialog(
+            context:context,
+            builder:(ctx){
+              return AlertDialog(
+                actions: <Widget>[
+                  FlatButton(
+                    child:Text('OK'),
+                    onPressed: ()=>Navigator.of(ctx).pop(),
+                  )
+                ],
+                content: Text('An error ocurred try again later'),
+              );
+            }
+          );
+        })
+        .then((_){
+          setState((){_isLoading = false;});
+          Navigator.of(context).pop();
+        });
       }else{
         print('updating product');
-        prod.updateProduct(_newProduct);
-        Navigator.of(context).pop();
+        prod.updateProduct(_newProduct)
+        .catchError((e){
+          return showDialog(
+            context:context,
+            builder:(ctx){
+              return AlertDialog(
+                actions: <Widget>[
+                  FlatButton(
+                    child:Text('OK'),
+                    onPressed: ()=>Navigator.of(ctx).pop(),
+                  )
+                ],
+                content: Text('An error ocurred try again later'),
+              );
+            }
+          );
+        })
+        .then((_){
+          setState((){_isLoading = false;});
+          Navigator.of(context).pop();
+        });
       }
 
     }

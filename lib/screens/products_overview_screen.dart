@@ -5,6 +5,7 @@ import '../widgets/main_drawer.dart';
 import '../widgets/badge.dart';
 import '../screens/cart_screen.dart';
 import '../providers/cart_provider.dart';
+import '../providers/products_provider.dart';
 
 enum Filters { favorites, all}
 
@@ -18,6 +19,24 @@ class ProductsOverViewScreen extends StatefulWidget {
 class _ProductsOverViewScreenState extends State<ProductsOverViewScreen> {
 
   bool _showFavorites = false;
+  bool _isInit = true;
+  bool _isLoading = false;
+
+  @override
+  void didChangeDependencies() {
+    if(_isInit){
+      setState(()=>_isLoading = true);
+      Provider.of<Products>(context).fetchData()
+      .then((_){
+        setState(()=>_isLoading=false);
+      })
+      .catchError((e){
+        setState(()=>_isLoading = false);
+      });
+    }
+    _isInit = false;
+    super.didChangeDependencies();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +78,22 @@ class _ProductsOverViewScreenState extends State<ProductsOverViewScreen> {
         ],
       ),
 
-      body: ProductsGrid(_showFavorites),
+      body: !_isLoading ? ProductsGrid(_showFavorites)
+        :Container(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                'Please wait.....',
+                style: Theme.of(context).textTheme.display1,
+              ),
+              SizedBox(height: 10,),
+              CircularProgressIndicator()
+            ],
+          ),
+        ),
 
       drawer: MainDrawer(),
     );
