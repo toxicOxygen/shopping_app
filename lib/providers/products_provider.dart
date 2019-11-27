@@ -54,6 +54,7 @@ class Products with ChangeNotifier{
     final url = "https://shopping-app-ddbbc.firebaseio.com/products.json";
     try{
       final response = await http.get(url);
+      if(response.body == null) return;
       Map<String,dynamic> responseData = json.decode(response.body);
       print(responseData);
       List<Product> _products = [];

@@ -9,29 +9,35 @@ class OrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final orders = Provider.of<Orders>(context).orders;
+    //final orders = Provider.of<Orders>(context).orders;
     return Scaffold(
       appBar: AppBar(
         title: Text('Your orders'),
       ),
       drawer: MainDrawer(),
-      body: orders.isNotEmpty ? ListView.builder(
-        itemCount: orders.length,
-        itemBuilder: (ctx,i)=>OrderListItem(
-          amount: orders[i].amount,
-          dateTime: orders[i].dateTime,
-          products: orders[i].products,
-        ),
-      ):
-      Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Center(
-          child: Text(
-            'No orders available currently',
-            style: Theme.of(context).textTheme.display1,
-            textAlign: TextAlign.center,
-          ),
-        ),
+      body: FutureBuilder(
+        future: Provider.of<Orders>(context,listen: false).fetchOrders(),
+        builder: (ctx,snapshot){
+          if(snapshot.connectionState == ConnectionState.waiting)
+            return Center(child: CircularProgressIndicator(),);
+          
+          final bool isError = snapshot.error??false;
+          if(isError)
+            return Center(child: Text('Encountered an error try again'),);
+          else
+            return Consumer<Orders>(
+              builder: (c,order,_){
+                return ListView.builder(
+                  itemCount: order.orders.length,
+                  itemBuilder: (ctx,i)=>OrderListItem(
+                    amount: order.orders[i].amount,
+                    dateTime: order.orders[i].dateTime,
+                    products: order.orders[i].products,
+                  ),
+                );
+              },
+            );
+        },
       ),
     );
   }
