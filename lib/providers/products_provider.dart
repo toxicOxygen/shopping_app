@@ -116,7 +116,7 @@ class Products with ChangeNotifier{
     var existingProduct = _items[productIndex];
     _items.removeAt(productIndex);
     notifyListeners();
-    
+
     return http.delete(url).then((res){
       if(res.statusCode >= 400)
         throw HttpException('failed to delete');
@@ -124,6 +124,7 @@ class Products with ChangeNotifier{
     }).catchError((e){
       _items.insert(productIndex, existingProduct);
       notifyListeners();
+      throw e;
     });
   }
 }

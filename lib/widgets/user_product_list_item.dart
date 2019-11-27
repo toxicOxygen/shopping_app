@@ -16,6 +16,8 @@ class UserProductItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scaffold = Scaffold.of(context);
+
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: NetworkImage(imageUrl),
@@ -59,7 +61,18 @@ class UserProductItem extends StatelessWidget {
                 if(val == null)
                   return;
                 if(val)
-                  Provider.of<Products>(context,listen: false).deleteProduct(id);
+                  Provider.of<Products>(context,listen: false).deleteProduct(id)
+                  .catchError((e){
+                    scaffold.hideCurrentSnackBar();
+                    scaffold.showSnackBar(SnackBar(
+                      content: Text('failed to delete item'),
+                      duration: Duration(milliseconds: 500),
+                      action: SnackBarAction(
+                        label: 'OK',
+                        onPressed: (){},
+                      ),
+                    ));
+                  });
               });
             },
           )
