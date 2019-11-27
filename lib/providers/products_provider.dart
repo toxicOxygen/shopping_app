@@ -20,9 +20,20 @@ class Product with ChangeNotifier {
     this.isFavorite = false
   });
 
-  void toggleFavorite(){
+  Future<void> toggleFavorite(){
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$id.json";
     isFavorite = !isFavorite;
     notifyListeners();
+    return http.patch(url,body:json.encode({"isFavorite":isFavorite}))
+    .then((res){
+      if(res.statusCode >= 400)
+        throw HttpException('failed to change like status');
+    })
+    .catchError((e){
+      isFavorite = !isFavorite;
+      notifyListeners();
+      throw e;
+    });
   }
 }
 
