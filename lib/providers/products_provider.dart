@@ -20,8 +20,8 @@ class Product with ChangeNotifier {
     this.isFavorite = false
   });
 
-  Future<void> toggleFavorite(){
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$id.json";
+  Future<void> toggleFavorite(String authTokenn){
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$id.json?auth=$authTokenn";
     isFavorite = !isFavorite;
     notifyListeners();
     return http.patch(url,body:json.encode({"isFavorite":isFavorite}))
@@ -40,6 +40,11 @@ class Product with ChangeNotifier {
 
 class Products with ChangeNotifier{
 
+  final String authToken;
+  final List<Product> items;
+
+  Products(this.authToken,this.items);
+
   List<Product> _items = [];
 
   List<Product> get products{
@@ -51,7 +56,7 @@ class Products with ChangeNotifier{
   }
 
   Future<void> fetchData() async{
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json";
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json?auth=$authToken";
     try{
       final response = await http.get(url);
       if(response.body == null) return;
@@ -77,7 +82,7 @@ class Products with ChangeNotifier{
   }
 
   Future<void> addProduct(Map<String,dynamic> data){
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json";
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json?auth=$authToken";
     data.remove("id");
     data = {...data,"isFavorite":false};
 
@@ -101,7 +106,7 @@ class Products with ChangeNotifier{
 
   Future<void> updateProduct(Map<String,dynamic> data) async{
     final productId = data["id"];
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json";
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json?auth=$authToken";
     data.remove("id");
     try{
       final index = _items.indexWhere((item)=>item.id==productId);
@@ -123,7 +128,7 @@ class Products with ChangeNotifier{
   }
 
   Future<void> deleteProduct(String productId) {
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json";
+    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$productId.json?auth=$authToken";
     final productIndex = _items.indexWhere((item)=>item.id == productId);
     var existingProduct = _items[productIndex];
     _items.removeAt(productIndex);
@@ -139,4 +144,5 @@ class Products with ChangeNotifier{
       throw e;
     });
   }
+
 }

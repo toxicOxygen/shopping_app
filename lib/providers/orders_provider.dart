@@ -20,6 +20,11 @@ class OrderItem{
 
 
 class Orders with ChangeNotifier{
+  final String authToken;
+  final List<OrderItem> items;
+  
+  Orders(this.authToken,this.items);
+
   List<OrderItem> _items = [];
 
   List<OrderItem> get orders => [..._items];
