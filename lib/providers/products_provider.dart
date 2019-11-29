@@ -20,11 +20,11 @@ class Product with ChangeNotifier {
     this.isFavorite = false
   });
 
-  Future<void> toggleFavorite(String authTokenn){
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products/$id.json?auth=$authTokenn";
+  Future<void> toggleFavorite(String authTokenn,String userId){
+    final url = "https://shopping-app-ddbbc.firebaseio.com/userFavorites/$userId/$id.json?auth=$authTokenn";
     isFavorite = !isFavorite;
     notifyListeners();
-    return http.patch(url,body:json.encode({"isFavorite":isFavorite}))
+    return http.put(url,body:json.encode(isFavorite))
     .then((res){
       if(res.statusCode >= 400)
         throw HttpException('failed to change like status');
@@ -41,9 +41,10 @@ class Product with ChangeNotifier {
 class Products with ChangeNotifier{
 
   final String authToken;
+  final String userId;
   final List<Product> items;
 
-  Products(this.authToken,this.items);
+  Products(this.authToken,this.userId,this.items);
 
   List<Product> _items = [];
 
@@ -55,11 +56,18 @@ class Products with ChangeNotifier{
     return _items.where((item)=>item.isFavorite).toList();
   }
 
-  Future<void> fetchData() async{
-    final url = "https://shopping-app-ddbbc.firebaseio.com/products.json?auth=$authToken";
+  Future<void> fetchData([bool filter = false]) async{
+    var filterString = filter? 'orderBy="creatorId"&equalTo="$userId"':'';
+    var url = "https://shopping-app-ddbbc.firebaseio.com/products.json?auth=$authToken&$filterString";
     try{
       final response = await http.get(url);
-      if(response.body == null) return;
+      if(response.body == null || response == null) return;
+      print(response.body);
+      
+      url = "https://shopping-app-ddbbc.firebaseio.com/userFavorites/$userId.json?auth=$authToken";  
+      final favoriteResponse = await http.get(url);
+      
+      Map<String,dynamic> favResponseData = json.decode(favoriteResponse.body);
       Map<String,dynamic> responseData = json.decode(response.body);
       print(responseData);
       List<Product> _products = [];
@@ -70,7 +78,7 @@ class Products with ChangeNotifier{
           imageUrl: productData["imageUrl"],
           price: double.parse(productData["price"]),
           title: productData["title"],
-          isFavorite: productData["isFavorite"]
+          isFavorite: favResponseData == null ? false :favResponseData[productId] ?? false
         ));
       });
       _items = _products;
@@ -84,8 +92,7 @@ class Products with ChangeNotifier{
   Future<void> addProduct(Map<String,dynamic> data){
     final url = "https://shopping-app-ddbbc.firebaseio.com/products.json?auth=$authToken";
     data.remove("id");
-    data = {...data,"isFavorite":false};
-
+    data = {...data,"creatorId":userId};
     return http.post(url, body: json.encode(data)
     ).then((res){
       final id = json.decode(res.body)["name"];

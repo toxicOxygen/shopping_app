@@ -28,7 +28,7 @@ class ProductListItem extends StatelessWidget {
             builder: (ctx,product,_){
               return IconButton(
                 icon: Icon(!product.isFavorite? Icons.favorite_border:Icons.favorite),
-                onPressed: ()=>product.toggleFavorite(auth.token),
+                onPressed: ()=>product.toggleFavorite(auth.token,auth.userId),
               );
             },
           ),
