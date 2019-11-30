@@ -104,7 +104,7 @@ class AuthProvider with ChangeNotifier{
       return false;
     
     _token = extractedData["token"];
-    _expiryDate = extractedData["expiryDate"];
+    _expiryDate = expiryDate;
     _userId = extractedData["userId"];
     notifyListeners();
     _autoLogout();
