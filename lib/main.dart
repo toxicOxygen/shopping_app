@@ -11,6 +11,7 @@ import './providers/orders_provider.dart';
 import './screens/orders_screen.dart';
 import './screens/auth_screen.dart';
 import './providers/auth_provider.dart';
+import './screens/splash_screen.dart';
 
 void main(){
   runApp(MyApp());
@@ -48,7 +49,14 @@ class MyApp extends StatelessWidget {
               accentColor: Colors.pink,
               fontFamily: 'Ubuntu'
             ),
-            home: !auth.isAuthenticated ? AuthScreen():ProductsOverViewScreen(),
+            home: auth.isAuthenticated ? ProductsOverViewScreen() : FutureBuilder(
+              future: auth.tryAutoLogin(),
+              builder: (ctx,snapshot){
+                if(snapshot.connectionState == ConnectionState.waiting)
+                  return SplashScreen();
+                return AuthScreen();
+              },
+            ),
             routes: {
               ProductDetailScreen.routeName: (ctx)=>ProductDetailScreen(),
               CartScreen.routeName: (ctx)=>CartScreen(),
